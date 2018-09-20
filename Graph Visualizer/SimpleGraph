@@ -1,0 +1,103 @@
+#include "SimpleGraph.hpp"
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <cmath>
+#include <iomanip>
+using std::ifstream;
+using std::string;
+using std::cout;
+using std::cin;
+using std::setw;
+
+const double twoPi = 6.283185307179586476925286766559;
+const double K = 1.0e-3;
+
+Node::Node(double ex, double why) : x(ex), y(why) { }
+double Node::distance(const Node& n) {
+	return sqrt((x - n.x)*(x - n.x) + (y - n.y)*(y - n.y));
+}
+
+Edge::Edge(unsigned s, unsigned t) : start(s), end(t) { }
+
+SimpleGraph::SimpleGraph() {
+	string fname;
+	unsigned n, m;
+	cout << "\nWhat file would you like to read from?";
+	cin >> fname;
+	ifstream read(fname);
+	read >> N;
+	//distances.resize(N*(N-1)/2);
+	// create node positions evenly spaced around the unit circle
+	for (unsigned i = 0; i < N; ++i) {
+		nodes.push_back(Node(cos(twoPi*i / N), sin(twoPi*i / N)));
+	}
+
+	// read into the edges vector
+	while(read >> n >> m) {
+		// create an edge;
+		edges.push_back(Edge(n, m));
+	}
+
+}
+
+//----------------------------------------------------------------------
+
+Node SimpleGraph::getNode(unsigned i) {
+	if (i > nodes.size()-1) return Node(0, 0);
+	return nodes[i];
+}
+
+//----------------------------------------------------------------------
+
+Edge SimpleGraph::getEdge(unsigned i) {
+	if (i > edges.size() - 1) return Edge(0, 0);
+	return edges[i];
+}
+
+void SimpleGraph::printDistances() {
+	for (double d : distances) cout << d << '\n';
+}
+
+//**************************************
+// Helper function for drawing (printing out) the node coordinates:
+ostream& operator<<(ostream& latefordinner, const Node& n) {
+	return latefordinner << '(' << n.x << ", " << n.y << ')';
+}
+
+//---------------------------------------------------------------------
+
+void SimpleGraph::update() {
+	// Compute the distance and load them into the distance vector
+	distances.clear();
+	Frepel.clear();
+	Fattract.clear();
+	for (unsigned i = 0; i < N - 1; ++i)
+		for (unsigned j = i + 1; j < N; ++j) {
+			//distances[i*(N - 2) + j - 1] = nodes[i].distance(nodes[j]);
+			double d = nodes[i].distance(nodes[j]);
+			distances.push_back(d);
+			Frepel.push_back(K / d);
+			Fattract.push_back(K * d * d);
+		}
+	cout << "\nThere are " << distances.size() << " distances.";
+	// Move Nodes according to repellent forces
+	// Move Nodes according to attactive forces
+}
+
+//---------------------------------------------------------------------
+void DrawGraph(SimpleGraph& userGraph) {
+	// For each edge, print out node number and coords <--> node number and coords
+	for (unsigned i = 0; i < userGraph.getEdgeSize(); ++i) {
+		//print edge node 1 number and coordinates
+		//print "<--->"
+		//print edge node 2 number and coordinates
+		Edge e = userGraph.getEdge(i);
+		Node Start = userGraph.getNode(e.start);
+		Node End = userGraph.getNode(e.end);
+		cout << "\nnode " << e.start
+			<< '(' << setw(9) << Start.x << ", " << setw(9) << Start.y << ')'
+			<< "<-->" << e.end << '(' << setw(9) << End.x << ", " << setw(9)
+			<< End.y << "): " << Start.distance(End);
+	}
+}
